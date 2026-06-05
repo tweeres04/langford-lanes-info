@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, useState } from 'react'
 import {
 	Await,
 	Form,
@@ -12,6 +12,7 @@ import {
 	ArrowRight01Icon,
 	BowlingIcon,
 	FilterIcon,
+	Share03Icon,
 } from '@hugeicons/core-free-icons'
 
 import type { Route } from './+types/home'
@@ -297,103 +298,106 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 
 				<div className="mb-4 flex items-center justify-between gap-2">
 					<h2 className="text-xl font-semibold">{dateLabel}</h2>
-					<Sheet>
-						<SheetTrigger
-							render={
-								<Button variant="outline" size="sm">
-									<HugeiconsIcon icon={FilterIcon} />
-									Filters
-									{filtersActive && (
-										<span className="size-2 rounded-full bg-primary" />
-									)}
-								</Button>
-							}
-						/>
-						<SheetContent side="bottom">
-							<SheetHeader>
-								<SheetTitle>Filters</SheetTitle>
-								<SheetDescription>
-									Times that don't fit get faded out.
-								</SheetDescription>
-							</SheetHeader>
-							<div className="grid gap-4 px-4">
-								<div className="grid gap-2">
-									<Label>Lane type</Label>
-									<Select
-										value={laneType}
-										onValueChange={(value) => setFilter('type', value, 'any')}
-									>
-										<SelectTrigger className="w-full">
-											<SelectValue>
-												{(value) =>
-													value === 'standard'
-														? 'Standard'
-														: value === 'vip'
-															? 'VIP'
-															: 'Any'
-												}
-											</SelectValue>
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="any">Any</SelectItem>
-											<SelectItem value="standard">Standard</SelectItem>
-											<SelectItem value="vip">VIP</SelectItem>
-										</SelectContent>
-									</Select>
+					<div className="flex items-center gap-2">
+						<ShareButton />
+						<Sheet>
+							<SheetTrigger
+								render={
+									<Button variant="outline">
+										<HugeiconsIcon icon={FilterIcon} />
+										Filters
+										{filtersActive && (
+											<span className="size-2 rounded-full bg-primary" />
+										)}
+									</Button>
+								}
+							/>
+							<SheetContent side="bottom">
+								<SheetHeader>
+									<SheetTitle>Filters</SheetTitle>
+									<SheetDescription>
+										Times that don't fit get faded out.
+									</SheetDescription>
+								</SheetHeader>
+								<div className="grid gap-4 px-4">
+									<div className="grid gap-2">
+										<Label>Lane type</Label>
+										<Select
+											value={laneType}
+											onValueChange={(value) => setFilter('type', value, 'any')}
+										>
+											<SelectTrigger className="w-full">
+												<SelectValue>
+													{(value) =>
+														value === 'standard'
+															? 'Standard'
+															: value === 'vip'
+																? 'VIP'
+																: 'Any'
+													}
+												</SelectValue>
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="any">Any</SelectItem>
+												<SelectItem value="standard">Standard</SelectItem>
+												<SelectItem value="vip">VIP</SelectItem>
+											</SelectContent>
+										</Select>
+									</div>
+									<div className="grid gap-2">
+										<Label>Lanes needed</Label>
+										<Select
+											value={String(lanes)}
+											onValueChange={(value) => setFilter('lanes', value, '0')}
+										>
+											<SelectTrigger className="w-full">
+												<SelectValue>
+													{(value) => (value === '0' ? 'Any' : value)}
+												</SelectValue>
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="0">Any</SelectItem>
+												{LANE_OPTIONS.map((n) => (
+													<SelectItem key={n} value={String(n)}>
+														{n}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
+									<div className="grid gap-2">
+										<Label>Minimum length</Label>
+										<Select
+											value={String(minLength)}
+											onValueChange={(value) => setFilter('length', value, '0')}
+										>
+											<SelectTrigger className="w-full">
+												<SelectValue>
+													{(value) =>
+														value === '0'
+															? 'Any'
+															: (LENGTH_OPTIONS.find((o) => o.value === value)
+																	?.label ?? value)
+													}
+												</SelectValue>
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="0">Any</SelectItem>
+												{LENGTH_OPTIONS.map((o) => (
+													<SelectItem key={o.value} value={o.value}>
+														{o.label}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
 								</div>
-								<div className="grid gap-2">
-									<Label>Lanes needed</Label>
-									<Select
-										value={String(lanes)}
-										onValueChange={(value) => setFilter('lanes', value, '0')}
-									>
-										<SelectTrigger className="w-full">
-											<SelectValue>
-												{(value) => (value === '0' ? 'Any' : value)}
-											</SelectValue>
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="0">Any</SelectItem>
-											{LANE_OPTIONS.map((n) => (
-												<SelectItem key={n} value={String(n)}>
-													{n}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								</div>
-								<div className="grid gap-2">
-									<Label>Minimum length</Label>
-									<Select
-										value={String(minLength)}
-										onValueChange={(value) => setFilter('length', value, '0')}
-									>
-										<SelectTrigger className="w-full">
-											<SelectValue>
-												{(value) =>
-													value === '0'
-														? 'Any'
-														: (LENGTH_OPTIONS.find((o) => o.value === value)
-																?.label ?? value)
-												}
-											</SelectValue>
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="0">Any</SelectItem>
-											{LENGTH_OPTIONS.map((o) => (
-												<SelectItem key={o.value} value={o.value}>
-													{o.label}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								</div>
-							</div>
-							<SheetFooter>
-								<SheetClose render={<Button>Done</Button>} />
-							</SheetFooter>
-						</SheetContent>
-					</Sheet>
+								<SheetFooter>
+									<SheetClose render={<Button>Done</Button>} />
+								</SheetFooter>
+							</SheetContent>
+						</Sheet>
+					</div>
 				</div>
 
 				{loaderData.isPast ? (
@@ -473,6 +477,44 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 				</Button>
 			</main>
 		</>
+	)
+}
+
+// Share the current URL — date + filters travel in the query string, so the
+// link reopens the exact view. Native share sheet when available, else copy.
+function ShareButton() {
+	const [copied, setCopied] = useState(false)
+
+	async function share() {
+		const url = window.location.href
+		if (navigator.share) {
+			try {
+				await navigator.share({ title: 'Langford Lanes Availability', url })
+			} catch {
+				// user dismissed the share sheet — nothing to do
+			}
+			return
+		}
+		try {
+			await navigator.clipboard.writeText(url)
+			setCopied(true)
+			setTimeout(() => setCopied(false), 2000)
+		} catch {
+			// clipboard blocked — nothing to do
+		}
+	}
+
+	return (
+		<Button
+			type="button"
+			variant="outline"
+			onClick={share}
+			aria-label="Share"
+			className="max-sm:w-9 max-sm:px-0"
+		>
+			<HugeiconsIcon icon={Share03Icon} />
+			<span className="hidden sm:inline">{copied ? 'Copied!' : 'Share'}</span>
+		</Button>
 	)
 }
 

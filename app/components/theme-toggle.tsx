@@ -22,9 +22,8 @@ export function ThemeToggle() {
 			<Button
 				type="submit"
 				variant="outline"
-				size="sm"
 				aria-label="Toggle theme"
-				className="max-sm:w-8 max-sm:px-0"
+				className="max-sm:w-9 max-sm:px-0"
 				// Flip the class right away so colors switch with no round-trip;
 				// the POST just persists the choice in the cookie.
 				onClick={() =>
