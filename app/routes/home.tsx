@@ -55,7 +55,7 @@ export function meta({}: Route.MetaArgs) {
 		{ title: 'Langford Lanes availability' },
 		{
 			name: 'description',
-			content: "Today's open bowling start times at Langford Lanes.",
+			content: 'Open bowling start times at Langford Lanes.',
 		},
 	]
 }
@@ -178,7 +178,8 @@ function slotFits(
 export async function loader({ request }: Route.LoaderArgs) {
 	const date = parseDateParam(new URL(request.url).searchParams.get('date'))
 	const dateValue = toDateInputValue(date)
-	const todayValue = toDateInputValue(new Date())
+	const now = new Date()
+	const todayValue = toDateInputValue(now)
 	const common = {
 		dateLabel: date.toLocaleDateString('en-CA', {
 			weekday: 'long',
@@ -197,12 +198,17 @@ export async function loader({ request }: Route.LoaderArgs) {
 	if (dateValue < todayValue) {
 		return { ...common, isPast: true as const }
 	}
+	const isToday = dateValue === todayValue
+	const nowMinutes = now.getHours() * 60 + now.getMinutes()
 	return {
 		...common,
 		isPast: false as const,
 		// Returned unawaited so the shell renders instantly and the list streams
 		// in — flipping days shows a skeleton right away instead of blocking.
-		slots: fetchSlots(date),
+		// On today, drop already-passed start times here so they never get sent.
+		slots: fetchSlots(date).then((slots) =>
+			isToday ? slots.filter((slot) => slot.value >= nowMinutes) : slots,
+		),
 	}
 }
 
@@ -518,14 +524,14 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 												>
 													<TableCell className="font-medium">
 														<span className="flex items-center gap-2">
-{slot.time}
-{isCosmic(slot, loaderData.dayOfWeek) && (
-<Badge>
-<HugeiconsIcon icon={Saturn01Icon} />
-Cosmic
-</Badge>
-)}
-</span>
+															{slot.time}
+															{isCosmic(slot, loaderData.dayOfWeek) && (
+																<Badge>
+																	<HugeiconsIcon icon={Saturn01Icon} />
+																	Cosmic
+																</Badge>
+															)}
+														</span>
 													</TableCell>
 													<TableCell className="text-right">
 														{slot.standard}
@@ -551,6 +557,15 @@ Cosmic
 					<HugeiconsIcon icon={BowlingIcon} className="size-6" />
 					Book
 				</Button>
+				<footer className="mt-10 text-center text-sm text-muted-foreground">
+					By{' '}
+					<a
+						href="https://tweeres.com"
+						className="font-medium text-foreground underline underline-offset-4"
+					>
+						Tyler Weeres
+					</a>
+				</footer>
 			</main>
 		</>
 	)
@@ -614,9 +629,7 @@ function FilterParams({
 			)}
 			{lanes > 0 && <input type="hidden" name="lanes" value={lanes} />}
 			{minLength > 0 && <input type="hidden" name="length" value={minLength} />}
-			{cosmic !== 'any' && (
-				<input type="hidden" name="cosmic" value={cosmic} />
-			)}
+			{cosmic !== 'any' && <input type="hidden" name="cosmic" value={cosmic} />}
 		</>
 	)
 }
