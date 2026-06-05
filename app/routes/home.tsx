@@ -224,7 +224,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 			<Button
 				render={<a href="https://secure.meriq.com/langford-lanes/" />}
 				size="xl"
-				className="fixed right-6 bottom-6 shadow-lg"
+				className="fixed right-6 bottom-6 bg-clip-border bg-[linear-gradient(to_bottom_left,rgba(255,255,255,0.3),transparent_25%)] shadow-[0_0_18px_0_rgba(225,44,90,0.85),0_0_48px_10px_rgba(225,44,90,0.55),inset_0_1px_0_rgba(255,255,255,0.7)]"
 			>
 				<HugeiconsIcon icon={BowlingIcon} className="size-6" />
 				Book
