@@ -22,8 +22,9 @@ export function ThemeToggle() {
 			<Button
 				type="submit"
 				variant="outline"
-				size="icon"
+				size="sm"
 				aria-label="Toggle theme"
+				className="max-sm:w-8 max-sm:px-0"
 				// Flip the class right away so colors switch with no round-trip;
 				// the POST just persists the choice in the cookie.
 				onClick={() =>
@@ -35,6 +36,9 @@ export function ThemeToggle() {
 				) : (
 					<HugeiconsIcon icon={Sun03Icon} />
 				)}
+				<span className="hidden sm:inline">
+					{theme === 'dark' ? 'Dark' : 'Light'}
+				</span>
 			</Button>
 		</fetcher.Form>
 	)

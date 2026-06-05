@@ -242,11 +242,13 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 							name="date"
 							value={prevValue}
 							variant="outline"
-							size="icon-lg"
+							size="lg"
 							aria-label="Previous day"
 							disabled={prevDisabled}
+							className="max-sm:w-10 max-sm:px-0"
 						>
 							<HugeiconsIcon icon={ArrowLeft01Icon} />
+							<span className="hidden sm:inline">Previous</span>
 						</Button>
 					</Form>
 
@@ -283,9 +285,11 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 							name="date"
 							value={nextValue}
 							variant="outline"
-							size="icon-lg"
+							size="lg"
 							aria-label="Next day"
+							className="max-sm:w-10 max-sm:px-0"
 						>
+							<span className="hidden sm:inline">Next</span>
 							<HugeiconsIcon icon={ArrowRight01Icon} />
 						</Button>
 					</Form>
