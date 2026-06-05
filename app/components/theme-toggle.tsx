@@ -1,5 +1,6 @@
 import { useFetcher, useRouteLoaderData } from 'react-router'
-import { Moon, Sun } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Sun03Icon, Moon02Icon } from '@hugeicons/core-free-icons'
 
 import { Button } from '~/components/ui/button'
 import type { Theme } from '~/theme'
@@ -29,7 +30,11 @@ export function ThemeToggle() {
 					document.documentElement.classList.toggle('dark', next === 'dark')
 				}
 			>
-				{theme === 'dark' ? <Moon /> : <Sun />}
+				{theme === 'dark' ? (
+					<HugeiconsIcon icon={Moon02Icon} />
+				) : (
+					<HugeiconsIcon icon={Sun03Icon} />
+				)}
 			</Button>
 		</fetcher.Form>
 	)
