@@ -111,10 +111,13 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 	return (
 		<main className="mx-auto max-w-2xl p-4 pb-28 text-lg">
 			<div className="mb-6 flex items-center justify-between">
-				<h1 className="text-3xl font-bold hidden sm:block">
-					Langford Lanes Availability
-				</h1>
-				<h1 className="text-3xl font-bold sm:hidden">LL Availability</h1>
+				<div className="flex items-center gap-2">
+					<img src="/bowling-ball.png" alt="" className="size-9" />
+					<h1 className="text-3xl font-bold hidden sm:block">
+						Langford Lanes Availability
+					</h1>
+					<h1 className="text-3xl font-bold sm:hidden">LL Availability</h1>
+				</div>
 				<ThemeToggle />
 			</div>
 
