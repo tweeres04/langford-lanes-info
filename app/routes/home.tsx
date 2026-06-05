@@ -12,11 +12,13 @@ import {
 	ArrowRight01Icon,
 	BowlingIcon,
 	FilterIcon,
+	Saturn01Icon,
 	Share03Icon,
 } from '@hugeicons/core-free-icons'
 
 import type { Route } from './+types/home'
 import { fetchSlots, type Slot } from '../lanes'
+import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
@@ -91,6 +93,30 @@ function closeMinutes(date: Date): number {
 	return day === 5 || day === 6 ? 24 * 60 : 23 * 60
 }
 
+// Cosmic bowling windows by day of week (start–end minutes from midnight).
+// Fri–Sun it's everything after 6pm; weekdays have the bottomless sessions.
+const COSMIC_WINDOWS: Record<number, [number, number][]> = {
+	0: [[1080, 1380]], // Sun: 6:00pm – close
+	1: [
+		[1020, 1185], // Mon: 5:00 – 7:45pm
+		[1260, 1380], // Mon: 9:00 – 11:00pm
+	],
+	2: [], // Tue: none
+	3: [
+		[1020, 1185], // Wed: 5:00 – 7:45pm
+		[1200, 1380], // Wed: 8:00 – 11:00pm
+	],
+	4: [[1260, 1380]], // Thu: 9:00 – 11:00pm
+	5: [[1080, 1440]], // Fri: 6:00pm – close
+	6: [[1080, 1440]], // Sat: 6:00pm – close
+}
+
+function isCosmic(slot: Slot, dayOfWeek: number): boolean {
+	return (COSMIC_WINDOWS[dayOfWeek] ?? []).some(
+		([start, end]) => slot.value >= start && slot.value <= end,
+	)
+}
+
 const MAX_LENGTH_MIN = 180 // Meriq caps a booking at 3 hours
 const LANE_OPTIONS = [1, 2, 3] // Meriq lets you book up to 3 lanes
 const LENGTH_OPTIONS = [
@@ -104,6 +130,7 @@ const LENGTH_OPTIONS = [
 ]
 
 type LaneType = 'any' | 'standard' | 'vip'
+type CosmicFilter = 'any' | 'cosmic' | 'regular'
 
 // Filter values come from the query string; clamp them to known-good values.
 function parseLaneType(value: string | null): LaneType {
@@ -116,6 +143,9 @@ function parseLanes(value: string | null): number {
 function parseLength(value: string | null): number {
 	const n = Number(value)
 	return LENGTH_OPTIONS.some((o) => Number(o.value) === n) ? n : 0
+}
+function parseCosmic(value: string | null): CosmicFilter {
+	return value === 'cosmic' || value === 'regular' ? value : 'any'
 }
 
 function lanesForType(slot: Slot, type: LaneType): number {
@@ -135,9 +165,13 @@ function slotFits(
 	lanes: number,
 	minLength: number,
 	close: number,
+	cosmic: CosmicFilter,
+	dayOfWeek: number,
 ): boolean {
 	if (lanes > 0 && lanesForType(slot, type) < lanes) return false
 	if (minLength > 0 && maxBookableMinutes(slot, close) < minLength) return false
+	if (cosmic === 'cosmic' && !isCosmic(slot, dayOfWeek)) return false
+	if (cosmic === 'regular' && isCosmic(slot, dayOfWeek)) return false
 	return true
 }
 
@@ -156,6 +190,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		nextValue: toDateInputValue(addDays(date, 1)),
 		todayValue,
 		closeMinutes: closeMinutes(date),
+		dayOfWeek: date.getDay(),
 	}
 	// YYYY-MM-DD strings compare lexicographically, so this is a safe date check.
 	// Past dates: skip the Meriq fetch entirely.
@@ -201,7 +236,9 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 	const laneType = parseLaneType(searchParams.get('type'))
 	const lanes = parseLanes(searchParams.get('lanes'))
 	const minLength = parseLength(searchParams.get('length'))
-	const filtersActive = laneType !== 'any' || lanes > 0 || minLength > 0
+	const cosmic = parseCosmic(searchParams.get('cosmic'))
+	const filtersActive =
+		laneType !== 'any' || lanes > 0 || minLength > 0 || cosmic !== 'any'
 
 	function setFilter(key: string, value: string | null, emptyValue: string) {
 		setSearchParams(
@@ -237,6 +274,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 							laneType={laneType}
 							lanes={lanes}
 							minLength={minLength}
+							cosmic={cosmic}
 						/>
 						<Button
 							type="submit"
@@ -262,6 +300,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 							laneType={laneType}
 							lanes={lanes}
 							minLength={minLength}
+							cosmic={cosmic}
 						/>
 						{/* key forces a remount so the picker shows the new date after nav */}
 						<Input
@@ -280,6 +319,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 							laneType={laneType}
 							lanes={lanes}
 							minLength={minLength}
+							cosmic={cosmic}
 						/>
 						<Button
 							type="submit"
@@ -320,6 +360,32 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 									</SheetDescription>
 								</SheetHeader>
 								<div className="grid gap-4 px-4">
+									<div className="grid gap-2">
+										<Label>Cosmic bowling</Label>
+										<Select
+											value={cosmic}
+											onValueChange={(value) =>
+												setFilter('cosmic', value, 'any')
+											}
+										>
+											<SelectTrigger className="w-full">
+												<SelectValue>
+													{(value) =>
+														value === 'cosmic'
+															? 'Cosmic'
+															: value === 'regular'
+																? 'Not cosmic'
+																: 'Either'
+													}
+												</SelectValue>
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="any">Either</SelectItem>
+												<SelectItem value="cosmic">Cosmic</SelectItem>
+												<SelectItem value="regular">Not cosmic</SelectItem>
+											</SelectContent>
+										</Select>
+									</div>
 									<div className="grid gap-2">
 										<Label>Lane type</Label>
 										<Select
@@ -443,13 +509,23 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 															lanes,
 															minLength,
 															loaderData.closeMinutes,
+															cosmic,
+															loaderData.dayOfWeek,
 														)
 															? 'transition-opacity'
 															: 'opacity-40 transition-opacity'
 													}
 												>
 													<TableCell className="font-medium">
-														{slot.time}
+														<span className="flex items-center gap-2">
+{slot.time}
+{isCosmic(slot, loaderData.dayOfWeek) && (
+<Badge>
+<HugeiconsIcon icon={Saturn01Icon} />
+Cosmic
+</Badge>
+)}
+</span>
 													</TableCell>
 													<TableCell className="text-right">
 														{slot.standard}
@@ -524,10 +600,12 @@ function FilterParams({
 	laneType,
 	lanes,
 	minLength,
+	cosmic,
 }: {
 	laneType: LaneType
 	lanes: number
 	minLength: number
+	cosmic: CosmicFilter
 }) {
 	return (
 		<>
@@ -536,6 +614,9 @@ function FilterParams({
 			)}
 			{lanes > 0 && <input type="hidden" name="lanes" value={lanes} />}
 			{minLength > 0 && <input type="hidden" name="length" value={minLength} />}
+			{cosmic !== 'any' && (
+				<input type="hidden" name="cosmic" value={cosmic} />
+			)}
 		</>
 	)
 }
