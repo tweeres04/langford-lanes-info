@@ -139,3 +139,34 @@
     cursor: pointer;
   }
 }
+
+/* Title effect (DM Sans). Light mode: pink->violet gradient fill (reads well
+   on the pale bg, where a glow can't). Dark mode: solid text + neon pink glow. */
+.neon-title {
+  background-image: linear-gradient(115deg, var(--primary), #8b2fc9);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.dark .neon-title {
+  background-image: none;
+  -webkit-text-fill-color: currentColor;
+  text-shadow:
+    0 0 6px rgba(225, 44, 90, 0.85),
+    0 0 16px rgba(225, 44, 90, 0.6),
+    0 0 30px rgba(225, 44, 90, 0.45);
+}
+
+/* Drifting disco lights */
+@keyframes disco-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(120px, 80px) scale(1.25); }
+}
+@keyframes disco-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1.1); }
+  50% { transform: translate(-140px, 70px) scale(0.95); }
+}
+@keyframes disco-drift-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(90px, -110px) scale(1.3); }
+}

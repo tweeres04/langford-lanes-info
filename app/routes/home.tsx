@@ -109,127 +109,145 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 	const prevDisabled = prevValue < todayValue
 
 	return (
-		<main className="mx-auto max-w-2xl p-4 pb-28 text-lg">
-			<div className="mb-6 flex items-center justify-between">
-				<div className="flex items-center gap-2">
-					<img src="/bowling-ball.png" alt="" className="size-9" />
-					<h1 className="text-3xl font-bold hidden sm:block">
-						Langford Lanes Availability
-					</h1>
-					<h1 className="text-3xl font-bold sm:hidden">LL Availability</h1>
+		<>
+			<DiscoLights />
+			<main className="mx-auto max-w-2xl p-4 pb-28 text-lg">
+				<div className="mb-6 flex items-center justify-between">
+					<div className="flex items-center gap-2">
+						<img src="/bowling-ball.png" alt="" className="size-9" />
+						<h1 className="hidden neon-title text-3xl font-bold sm:block">
+							Langford Lanes Availability
+						</h1>
+						<h1 className="text-3xl font-bold sm:hidden neon-title">
+							LL Availability
+						</h1>
+					</div>
+					<ThemeToggle />
 				</div>
-				<ThemeToggle />
-			</div>
 
-			<div className="mb-4 flex items-center gap-2">
-				<Form method="get">
-					<Button
-						type="submit"
-						name="date"
-						value={prevValue}
-						variant="outline"
-						size="icon-lg"
-						aria-label="Previous day"
-						disabled={prevDisabled}
+				<div className="mb-4 flex items-center gap-2">
+					<Form method="get">
+						<Button
+							type="submit"
+							name="date"
+							value={prevValue}
+							variant="outline"
+							size="icon-lg"
+							aria-label="Previous day"
+							disabled={prevDisabled}
+						>
+							<HugeiconsIcon icon={ArrowLeft01Icon} />
+						</Button>
+					</Form>
+
+					<Form
+						method="get"
+						className="flex-1"
+						onChange={(event) => submit(event.currentTarget)}
 					>
-						<HugeiconsIcon icon={ArrowLeft01Icon} />
-					</Button>
-				</Form>
+						{/* key forces a remount so the picker shows the new date after nav */}
+						<Input
+							key={dateValue}
+							type="date"
+							name="date"
+							defaultValue={dateValue}
+							min={todayValue}
+							aria-label="Pick a date"
+							className="h-11 text-base"
+						/>
+					</Form>
 
-				<Form
-					method="get"
-					className="flex-1"
-					onChange={(event) => submit(event.currentTarget)}
-				>
-					{/* key forces a remount so the picker shows the new date after nav */}
-					<Input
-						key={dateValue}
-						type="date"
-						name="date"
-						defaultValue={dateValue}
-						min={todayValue}
-						aria-label="Pick a date"
-						className="h-11 text-base"
-					/>
-				</Form>
+					<Form method="get">
+						<Button
+							type="submit"
+							name="date"
+							value={nextValue}
+							variant="outline"
+							size="icon-lg"
+							aria-label="Next day"
+						>
+							<HugeiconsIcon icon={ArrowRight01Icon} />
+						</Button>
+					</Form>
+				</div>
 
-				<Form method="get">
-					<Button
-						type="submit"
-						name="date"
-						value={nextValue}
-						variant="outline"
-						size="icon-lg"
-						aria-label="Next day"
-					>
-						<HugeiconsIcon icon={ArrowRight01Icon} />
-					</Button>
-				</Form>
-			</div>
+				<h2 className="mb-4 text-xl font-semibold">{dateLabel}</h2>
 
-			<h2 className="mb-4 text-xl font-semibold">{dateLabel}</h2>
-
-			{loaderData.isPast ? (
-				<p>This date is in the past.</p>
-			) : (
-				<Table className="text-base">
-					<TableHeader>
-						<TableRow>
-							<TableHead>Time</TableHead>
-							<TableHead className="text-right">Standard</TableHead>
-							<TableHead className="text-right">VIP</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{/* key per date forces a fresh boundary so the skeleton shows on
+				{loaderData.isPast ? (
+					<p>This date is in the past.</p>
+				) : (
+					<Table className="text-base">
+						<TableHeader>
+							<TableRow>
+								<TableHead>Time</TableHead>
+								<TableHead className="text-right">Standard</TableHead>
+								<TableHead className="text-right">VIP</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{/* key per date forces a fresh boundary so the skeleton shows on
 						    each navigation — without it RR's transition keeps old rows */}
-						<Suspense key={dateValue} fallback={<SlotsSkeletonRows />}>
-							<Await
-								resolve={loaderData.slots}
-								errorElement={
-									<TableRow>
-										<TableCell colSpan={3}>
-											Couldn't load times right now. Try again.
-										</TableCell>
-									</TableRow>
-								}
-							>
-								{(resolved) =>
-									resolved.length === 0 ? (
+							<Suspense key={dateValue} fallback={<SlotsSkeletonRows />}>
+								<Await
+									resolve={loaderData.slots}
+									errorElement={
 										<TableRow>
 											<TableCell colSpan={3}>
-												No available start times.
+												Couldn't load times right now. Try again.
 											</TableCell>
 										</TableRow>
-									) : (
-										resolved.map((slot) => (
-											<TableRow key={slot.value}>
-												<TableCell className="font-medium">
-													{slot.time}
+									}
+								>
+									{(resolved) =>
+										resolved.length === 0 ? (
+											<TableRow>
+												<TableCell colSpan={3}>
+													No available start times.
 												</TableCell>
-												<TableCell className="text-right">
-													{slot.standard}
-												</TableCell>
-												<TableCell className="text-right">{slot.vip}</TableCell>
 											</TableRow>
-										))
-									)
-								}
-							</Await>
-						</Suspense>
-					</TableBody>
-				</Table>
-			)}
+										) : (
+											resolved.map((slot) => (
+												<TableRow key={slot.value}>
+													<TableCell className="font-medium">
+														{slot.time}
+													</TableCell>
+													<TableCell className="text-right">
+														{slot.standard}
+													</TableCell>
+													<TableCell className="text-right">
+														{slot.vip}
+													</TableCell>
+												</TableRow>
+											))
+										)
+									}
+								</Await>
+							</Suspense>
+						</TableBody>
+					</Table>
+				)}
 
-			<Button
-				render={<a href="https://secure.meriq.com/langford-lanes/" />}
-				size="xl"
-				className="fixed right-6 bottom-6 bg-clip-border bg-[linear-gradient(to_bottom_left,rgba(255,255,255,0.3),transparent_25%)] shadow-[0_0_18px_0_rgba(225,44,90,0.85),0_0_48px_10px_rgba(225,44,90,0.55),inset_0_1px_0_rgba(255,255,255,0.7)]"
-			>
-				<HugeiconsIcon icon={BowlingIcon} className="size-6" />
-				Book
-			</Button>
-		</main>
+				<Button
+					render={<a href="https://secure.meriq.com/langford-lanes/" />}
+					size="xl"
+					className="fixed right-6 bottom-6 bg-clip-border bg-[linear-gradient(to_bottom_left,rgba(255,255,255,0.3),transparent_25%)] shadow-[0_0_18px_0_rgba(225,44,90,0.85),0_0_48px_10px_rgba(225,44,90,0.55),inset_0_1px_0_rgba(255,255,255,0.7)]"
+				>
+					<HugeiconsIcon icon={BowlingIcon} className="size-6" />
+					Book
+				</Button>
+			</main>
+		</>
+	)
+}
+
+// Slow-drifting colored glows behind everything — distant disco lights.
+function DiscoLights() {
+	return (
+		<div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+			<div className="absolute -left-24 top-10 size-72 animate-[disco-drift-1_9s_ease-in-out_infinite] rounded-full bg-[#E12C5A] opacity-30 blur-3xl" />
+			<div className="absolute right-0 top-1/3 size-80 animate-[disco-drift-2_11s_ease-in-out_infinite] rounded-full bg-[#8B2FC9] opacity-25 blur-3xl" />
+			<div className="absolute bottom-0 left-1/3 size-72 animate-[disco-drift-3_13s_ease-in-out_infinite] rounded-full bg-[#2FB6C9] opacity-20 blur-3xl" />
+		</div>
 	)
 }
 
