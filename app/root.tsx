@@ -26,6 +26,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 			<head>
 				<meta charSet="utf-8" />
 				<meta name="viewport" content="width=device-width, initial-scale=1" />
+				<meta name="theme-color" content="#0a0a0a" />
+				<link rel="icon" href="/bowling-ball.png" type="image/png" />
+				<link rel="apple-touch-icon" href="/bowling-ball.png" />
+				<link rel="manifest" href="/manifest.webmanifest" />
 				<Meta />
 				<Links />
 			</head>
