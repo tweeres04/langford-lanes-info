@@ -9,7 +9,9 @@ const DAY_MS = 86_400_000
 
 export type Slot = {
 	value: number // minutes from midnight
-	label: string // e.g. "10:45am (4 standard | 6 vip lanes)"
+	time: string // e.g. "10:45am"
+	standard: number // standard lanes free
+	vip: number // vip lanes free
 }
 
 export function toUsedate(date: Date) {
@@ -45,7 +47,14 @@ export async function fetchSlots(date: Date): Promise<Slot[]> {
 	while ((m = optionRe.exec(select[0])) !== null) {
 		const value = Number(m[1])
 		if (value === 0) continue // the "Choose" placeholder
-		slots.push({ value, label: m[2].replace(/\s+/g, ' ').trim() })
+		// Option text looks like "10:45am (4 standard | 6 vip lanes)".
+		const text = m[2].replace(/\s+/g, ' ').trim()
+		slots.push({
+			value,
+			time: text.split(' (')[0].trim(),
+			standard: Number(text.match(/(\d+)\s*standard/i)?.[1] ?? 0),
+			vip: Number(text.match(/(\d+)\s*vip/i)?.[1] ?? 0),
+		})
 	}
 	return slots
 }

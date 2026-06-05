@@ -17,6 +17,14 @@ import { fetchSlots } from '../lanes'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Skeleton } from '~/components/ui/skeleton'
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from '~/components/ui/table'
 import { ThemeToggle } from '~/components/theme-toggle'
 
 export function meta({}: Route.MetaArgs) {
@@ -161,26 +169,53 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 			{loaderData.isPast ? (
 				<p>This date is in the past.</p>
 			) : (
-				/* key per date forces a fresh boundary so the skeleton shows on each
-				   navigation — without it, RR's transition keeps the old list visible */
-				<Suspense key={dateValue} fallback={<SlotsSkeleton />}>
-					<Await
-						resolve={loaderData.slots}
-						errorElement={<p>Couldn't load times right now. Try again.</p>}
-					>
-						{(resolved) =>
-							resolved.length === 0 ? (
-								<p>No available start times.</p>
-							) : (
-								<ul className="space-y-2">
-									{resolved.map((slot) => (
-										<li key={slot.value}>{slot.label}</li>
-									))}
-								</ul>
-							)
-						}
-					</Await>
-				</Suspense>
+				<Table className="text-base">
+					<TableHeader>
+						<TableRow>
+							<TableHead>Time</TableHead>
+							<TableHead className="text-right">Standard</TableHead>
+							<TableHead className="text-right">VIP</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{/* key per date forces a fresh boundary so the skeleton shows on
+						    each navigation — without it RR's transition keeps old rows */}
+						<Suspense key={dateValue} fallback={<SlotsSkeletonRows />}>
+							<Await
+								resolve={loaderData.slots}
+								errorElement={
+									<TableRow>
+										<TableCell colSpan={3}>
+											Couldn't load times right now. Try again.
+										</TableCell>
+									</TableRow>
+								}
+							>
+								{(resolved) =>
+									resolved.length === 0 ? (
+										<TableRow>
+											<TableCell colSpan={3}>
+												No available start times.
+											</TableCell>
+										</TableRow>
+									) : (
+										resolved.map((slot) => (
+											<TableRow key={slot.value}>
+												<TableCell className="font-medium">
+													{slot.time}
+												</TableCell>
+												<TableCell className="text-right">
+													{slot.standard}
+												</TableCell>
+												<TableCell className="text-right">{slot.vip}</TableCell>
+											</TableRow>
+										))
+									)
+								}
+							</Await>
+						</Suspense>
+					</TableBody>
+				</Table>
 			)}
 
 			<Button
@@ -195,14 +230,22 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 	)
 }
 
-function SlotsSkeleton() {
+function SlotsSkeletonRows() {
 	return (
-		<ul className="space-y-2">
+		<>
 			{Array.from({ length: 12 }, (_, i) => (
-				<li key={i}>
-					<Skeleton className="h-7 w-64 max-w-full" />
-				</li>
+				<TableRow key={i}>
+					<TableCell>
+						<Skeleton className="h-5 w-16" />
+					</TableCell>
+					<TableCell>
+						<Skeleton className="ml-auto h-5 w-8" />
+					</TableCell>
+					<TableCell>
+						<Skeleton className="ml-auto h-5 w-8" />
+					</TableCell>
+				</TableRow>
 			))}
-		</ul>
+		</>
 	)
 }
