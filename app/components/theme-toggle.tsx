@@ -1,0 +1,36 @@
+import { useFetcher, useRouteLoaderData } from 'react-router'
+import { Moon, Sun } from 'lucide-react'
+
+import { Button } from '~/components/ui/button'
+import type { Theme } from '~/theme'
+import type { loader } from '~/root'
+
+export function ThemeToggle() {
+	const data = useRouteLoaderData<typeof loader>('root')
+	const fetcher = useFetcher()
+
+	// Reflect the in-flight submission immediately, otherwise the cookie the
+	// server resolved on this request.
+	const pending = fetcher.formData?.get('theme') as Theme | undefined
+	const theme = pending ?? data?.theme ?? 'dark'
+	const next: Theme = theme === 'dark' ? 'light' : 'dark'
+
+	return (
+		<fetcher.Form method="post" action="/set-theme">
+			<input type="hidden" name="theme" value={next} />
+			<Button
+				type="submit"
+				variant="outline"
+				size="icon"
+				aria-label="Toggle theme"
+				// Flip the class right away so colors switch with no round-trip;
+				// the POST just persists the choice in the cookie.
+				onClick={() =>
+					document.documentElement.classList.toggle('dark', next === 'dark')
+				}
+			>
+				{theme === 'dark' ? <Moon /> : <Sun />}
+			</Button>
+		</fetcher.Form>
+	)
+}
