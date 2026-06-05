@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import {
 	Await,
 	Form,
+	useSearchParams,
 	useSubmit,
 	type ShouldRevalidateFunctionArgs,
 } from 'react-router'
@@ -10,12 +11,31 @@ import {
 	ArrowLeft01Icon,
 	ArrowRight01Icon,
 	BowlingIcon,
+	FilterIcon,
 } from '@hugeicons/core-free-icons'
 
 import type { Route } from './+types/home'
-import { fetchSlots } from '../lanes'
+import { fetchSlots, type Slot } from '../lanes'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
+import { Label } from '~/components/ui/label'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '~/components/ui/select'
+import {
+	Sheet,
+	SheetClose,
+	SheetContent,
+	SheetDescription,
+	SheetFooter,
+	SheetHeader,
+	SheetTitle,
+	SheetTrigger,
+} from '~/components/ui/sheet'
 import { Skeleton } from '~/components/ui/skeleton'
 import {
 	Table,
@@ -64,6 +84,62 @@ function addDays(date: Date, days: number): Date {
 	return next
 }
 
+// Langford Lanes closing time (minutes from midnight). Fri/Sat run to 12am.
+function closeMinutes(date: Date): number {
+	const day = date.getDay() // 0 Sun … 6 Sat
+	return day === 5 || day === 6 ? 24 * 60 : 23 * 60
+}
+
+const MAX_LENGTH_MIN = 180 // Meriq caps a booking at 3 hours
+const LANE_OPTIONS = [1, 2, 3] // Meriq lets you book up to 3 lanes
+const LENGTH_OPTIONS = [
+	{ value: '30', label: '30 min' },
+	{ value: '45', label: '45 min' },
+	{ value: '60', label: '1 hr' },
+	{ value: '90', label: '1.5 hrs' },
+	{ value: '120', label: '2 hrs' },
+	{ value: '150', label: '2.5 hrs' },
+	{ value: '180', label: '3 hrs' },
+]
+
+type LaneType = 'any' | 'standard' | 'vip'
+
+// Filter values come from the query string; clamp them to known-good values.
+function parseLaneType(value: string | null): LaneType {
+	return value === 'standard' || value === 'vip' ? value : 'any'
+}
+function parseLanes(value: string | null): number {
+	const n = Number(value)
+	return LANE_OPTIONS.includes(n) ? n : 0
+}
+function parseLength(value: string | null): number {
+	const n = Number(value)
+	return LENGTH_OPTIONS.some((o) => Number(o.value) === n) ? n : 0
+}
+
+function lanesForType(slot: Slot, type: LaneType): number {
+	if (type === 'standard') return slot.standard
+	if (type === 'vip') return slot.vip
+	return slot.standard + slot.vip
+}
+
+// The longest booking a start time can fit before closing (capped at 3h).
+function maxBookableMinutes(slot: Slot, close: number): number {
+	return Math.min(MAX_LENGTH_MIN, close - slot.value)
+}
+
+function slotFits(
+	slot: Slot,
+	type: LaneType,
+	lanes: number,
+	minLength: number,
+	close: number,
+): boolean {
+	if (lanes > 0 && lanesForType(slot, type) < lanes) return false
+	if (minLength > 0 && maxBookableMinutes(slot, close) < minLength) return false
+	return true
+}
+
 export async function loader({ request }: Route.LoaderArgs) {
 	const date = parseDateParam(new URL(request.url).searchParams.get('date'))
 	const dateValue = toDateInputValue(date)
@@ -78,6 +154,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		prevValue: toDateInputValue(addDays(date, -1)),
 		nextValue: toDateInputValue(addDays(date, 1)),
 		todayValue,
+		closeMinutes: closeMinutes(date),
 	}
 	// YYYY-MM-DD strings compare lexicographically, so this is a safe date check.
 	// Past dates: skip the Meriq fetch entirely.
@@ -93,12 +170,21 @@ export async function loader({ request }: Route.LoaderArgs) {
 	}
 }
 
-// Don't re-fetch Meriq just because the theme cookie changed.
+// Only re-fetch Meriq when the date actually changes — not for the theme
+// cookie or filter (?type/?lanes/?length) tweaks, which are applied client-side.
 export function shouldRevalidate({
+	currentUrl,
+	nextUrl,
 	formAction,
 	defaultShouldRevalidate,
 }: ShouldRevalidateFunctionArgs) {
 	if (formAction === '/set-theme') return false
+	if (
+		currentUrl.pathname === nextUrl.pathname &&
+		currentUrl.searchParams.get('date') === nextUrl.searchParams.get('date')
+	) {
+		return false
+	}
 	return defaultShouldRevalidate
 }
 
@@ -107,6 +193,25 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 	const submit = useSubmit()
 	// At today, stepping back would land on a past date — so block it.
 	const prevDisabled = prevValue < todayValue
+
+	// Filters live in the query string (?type, ?lanes, ?length) so they're
+	// server-rendered and shareable, and changing them never re-fetches Meriq.
+	const [searchParams, setSearchParams] = useSearchParams()
+	const laneType = parseLaneType(searchParams.get('type'))
+	const lanes = parseLanes(searchParams.get('lanes'))
+	const minLength = parseLength(searchParams.get('length'))
+	const filtersActive = laneType !== 'any' || lanes > 0 || minLength > 0
+
+	function setFilter(key: string, value: string | null, emptyValue: string) {
+		setSearchParams(
+			(prev) => {
+				if (!value || value === emptyValue) prev.delete(key)
+				else prev.set(key, value)
+				return prev
+			},
+			{ replace: true, preventScrollReset: true },
+		)
+	}
 
 	return (
 		<>
@@ -127,6 +232,11 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 
 				<div className="mb-4 flex items-center gap-2">
 					<Form method="get">
+						<FilterParams
+							laneType={laneType}
+							lanes={lanes}
+							minLength={minLength}
+						/>
 						<Button
 							type="submit"
 							name="date"
@@ -145,6 +255,11 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 						className="flex-1"
 						onChange={(event) => submit(event.currentTarget)}
 					>
+						<FilterParams
+							laneType={laneType}
+							lanes={lanes}
+							minLength={minLength}
+						/>
 						{/* key forces a remount so the picker shows the new date after nav */}
 						<Input
 							key={dateValue}
@@ -158,6 +273,11 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 					</Form>
 
 					<Form method="get">
+						<FilterParams
+							laneType={laneType}
+							lanes={lanes}
+							minLength={minLength}
+						/>
 						<Button
 							type="submit"
 							name="date"
@@ -171,7 +291,106 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 					</Form>
 				</div>
 
-				<h2 className="mb-4 text-xl font-semibold">{dateLabel}</h2>
+				<div className="mb-4 flex items-center justify-between gap-2">
+					<h2 className="text-xl font-semibold">{dateLabel}</h2>
+					<Sheet>
+						<SheetTrigger
+							render={
+								<Button variant="outline" size="sm">
+									<HugeiconsIcon icon={FilterIcon} />
+									Filters
+									{filtersActive && (
+										<span className="size-2 rounded-full bg-primary" />
+									)}
+								</Button>
+							}
+						/>
+						<SheetContent side="bottom">
+							<SheetHeader>
+								<SheetTitle>Filters</SheetTitle>
+								<SheetDescription>
+									Times that don't fit get faded out.
+								</SheetDescription>
+							</SheetHeader>
+							<div className="grid gap-4 px-4">
+								<div className="grid gap-2">
+									<Label>Lane type</Label>
+									<Select
+										value={laneType}
+										onValueChange={(value) => setFilter('type', value, 'any')}
+									>
+										<SelectTrigger className="w-full">
+											<SelectValue>
+												{(value) =>
+													value === 'standard'
+														? 'Standard'
+														: value === 'vip'
+															? 'VIP'
+															: 'Any'
+												}
+											</SelectValue>
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="any">Any</SelectItem>
+											<SelectItem value="standard">Standard</SelectItem>
+											<SelectItem value="vip">VIP</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="grid gap-2">
+									<Label>Lanes needed</Label>
+									<Select
+										value={String(lanes)}
+										onValueChange={(value) => setFilter('lanes', value, '0')}
+									>
+										<SelectTrigger className="w-full">
+											<SelectValue>
+												{(value) => (value === '0' ? 'Any' : value)}
+											</SelectValue>
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="0">Any</SelectItem>
+											{LANE_OPTIONS.map((n) => (
+												<SelectItem key={n} value={String(n)}>
+													{n}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="grid gap-2">
+									<Label>Minimum length</Label>
+									<Select
+										value={String(minLength)}
+										onValueChange={(value) => setFilter('length', value, '0')}
+									>
+										<SelectTrigger className="w-full">
+											<SelectValue>
+												{(value) =>
+													value === '0'
+														? 'Any'
+														: (LENGTH_OPTIONS.find((o) => o.value === value)
+																?.label ?? value)
+												}
+											</SelectValue>
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="0">Any</SelectItem>
+											{LENGTH_OPTIONS.map((o) => (
+												<SelectItem key={o.value} value={o.value}>
+													{o.label}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+							</div>
+							<SheetFooter>
+								<SheetClose render={<Button>Done</Button>} />
+							</SheetFooter>
+						</SheetContent>
+					</Sheet>
+				</div>
 
 				{loaderData.isPast ? (
 					<p>This date is in the past.</p>
@@ -207,7 +426,20 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 											</TableRow>
 										) : (
 											resolved.map((slot) => (
-												<TableRow key={slot.value}>
+												<TableRow
+													key={slot.value}
+													className={
+														slotFits(
+															slot,
+															laneType,
+															lanes,
+															minLength,
+															loaderData.closeMinutes,
+														)
+															? 'transition-opacity'
+															: 'opacity-40 transition-opacity'
+													}
+												>
 													<TableCell className="font-medium">
 														{slot.time}
 													</TableCell>
@@ -236,6 +468,28 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 					Book
 				</Button>
 			</main>
+		</>
+	)
+}
+
+// Hidden inputs that carry the active filters through the date GET forms, so
+// flipping days keeps your filters instead of resetting them.
+function FilterParams({
+	laneType,
+	lanes,
+	minLength,
+}: {
+	laneType: LaneType
+	lanes: number
+	minLength: number
+}) {
+	return (
+		<>
+			{laneType !== 'any' && (
+				<input type="hidden" name="type" value={laneType} />
+			)}
+			{lanes > 0 && <input type="hidden" name="lanes" value={lanes} />}
+			{minLength > 0 && <input type="hidden" name="length" value={minLength} />}
 		</>
 	)
 }
