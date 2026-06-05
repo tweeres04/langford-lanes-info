@@ -1,6 +1,9 @@
 services:
-  web:
+  langford-lanes:
     build: .
-    ports:
-      - "3000:3000"
     restart: unless-stopped
+
+networks:
+  default:
+    external: true
+    name: proxy
