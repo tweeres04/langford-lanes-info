@@ -52,10 +52,30 @@ import { ThemeToggle } from '~/components/theme-toggle'
 
 const SITE_URL = 'https://langfordlanes.tweeres.com'
 const SITE_NAME = 'Langford Lanes availability'
-const TITLE = 'Langford Lanes availability — open & cosmic bowling times'
+const TITLE = 'Langford Lanes availability — open lanes & cosmic bowling'
 const DESCRIPTION =
-	'See which lanes are open at Langford Lanes in Langford, BC right now — live start times, standard & VIP availability, and cosmic bowling sessions.'
+	"A faster way to see what's open at Langford Lanes — live start times, standard & VIP lane counts, and cosmic bowling sessions."
 const OG_IMAGE = `${SITE_URL}/og-image.png`
+
+// Shared by the visible FAQ and the FAQPage JSON-LD so they never drift.
+const FAQ = [
+	{
+		q: 'What is this?',
+		a: "A faster, friendlier way to see what's open at Langford Lanes. It has live start times, standard & VIP lane counts, and cosmic bowling sessions at a glance.",
+	},
+	{
+		q: 'Is this the official Langford Lanes site?',
+		a: "No. This is an independent tool built by a local. When you tap Book, you're sent to Langford Lanes' official booking system to reserve.",
+	},
+	{
+		q: 'How current is the availability?',
+		a: 'It mirrors what the booking system shows right now, so open times and lane counts are live. Times that have already passed today are hidden automatically.',
+	},
+	{
+		q: 'What is cosmic bowling?',
+		a: 'Glow-in-the-dark bowling with the lights down and the music up. Start times tagged "Cosmic" here are cosmic bowling sessions.',
+	},
+]
 
 export function meta({}: Route.MetaArgs) {
 	return [
@@ -74,6 +94,17 @@ export function meta({}: Route.MetaArgs) {
 		{ name: 'twitter:title', content: TITLE },
 		{ name: 'twitter:description', content: DESCRIPTION },
 		{ name: 'twitter:image', content: OG_IMAGE },
+		{
+			'script:ld+json': {
+				'@context': 'https://schema.org',
+				'@type': 'FAQPage',
+				mainEntity: FAQ.map((item) => ({
+					'@type': 'Question',
+					name: item.q,
+					acceptedAnswer: { '@type': 'Answer', text: item.a },
+				})),
+			},
+		},
 		{
 			'script:ld+json': {
 				'@context': 'https://schema.org',
@@ -619,6 +650,18 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 					<HugeiconsIcon icon={BowlingIcon} className="size-6" />
 					Book
 				</Button>
+				<section className="mt-12">
+					<h2 className="mb-4 text-xl font-semibold">FAQ</h2>
+					<dl className="space-y-4">
+						{FAQ.map((item) => (
+							<div key={item.q}>
+								<dt className="font-medium">{item.q}</dt>
+								<dd className="text-muted-foreground">{item.a}</dd>
+							</div>
+						))}
+					</dl>
+				</section>
+
 				<footer className="mt-10 text-center text-sm text-muted-foreground">
 					By{' '}
 					<a
