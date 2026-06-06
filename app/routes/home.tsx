@@ -1,8 +1,9 @@
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import {
 	Await,
 	Form,
 	useSearchParams,
+	useRevalidator,
 	useSubmit,
 	type ShouldRevalidateFunctionArgs,
 } from 'react-router'
@@ -314,6 +315,9 @@ export function shouldRevalidate({
 	defaultShouldRevalidate,
 }: ShouldRevalidateFunctionArgs) {
 	if (formAction === '/set-theme') return false
+	// Manual revalidation (returning to the app) reuses the exact same URL —
+	// that's a deliberate refresh, so let it through.
+	if (currentUrl.href === nextUrl.href) return defaultShouldRevalidate
 	if (
 		currentUrl.pathname === nextUrl.pathname &&
 		currentUrl.searchParams.get('date') === nextUrl.searchParams.get('date')
@@ -323,9 +327,40 @@ export function shouldRevalidate({
 	return defaultShouldRevalidate
 }
 
+// Refresh the data when the user comes back to the app (tab/PWA becomes
+// visible or the window refocuses) and it's been a while. useRevalidator
+// re-runs the loaders in place — the table just updates when fresh slots
+// arrive, no reload and no skeleton flash.
+const REVALIDATE_AFTER_MS = 60_000
+
+function useRevalidateOnReturn() {
+	const revalidator = useRevalidator()
+	const lastLoadedAt = useRef(Date.now())
+
+	useEffect(() => {
+		function revalidateIfStale() {
+			if (
+				document.visibilityState === 'visible' &&
+				revalidator.state === 'idle' &&
+				Date.now() - lastLoadedAt.current > REVALIDATE_AFTER_MS
+			) {
+				lastLoadedAt.current = Date.now()
+				revalidator.revalidate()
+			}
+		}
+		document.addEventListener('visibilitychange', revalidateIfStale)
+		window.addEventListener('focus', revalidateIfStale)
+		return () => {
+			document.removeEventListener('visibilitychange', revalidateIfStale)
+			window.removeEventListener('focus', revalidateIfStale)
+		}
+	}, [revalidator])
+}
+
 export default function Home({ loaderData }: Route.ComponentProps) {
 	const { dateLabel, dateValue, prevValue, nextValue, todayValue } = loaderData
 	const submit = useSubmit()
+	useRevalidateOnReturn()
 	// At today, stepping back would land on a past date — so block it.
 	const prevDisabled = prevValue < todayValue
 
