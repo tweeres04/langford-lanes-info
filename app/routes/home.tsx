@@ -50,13 +50,28 @@ import {
 } from '~/components/ui/table'
 import { ThemeToggle } from '~/components/theme-toggle'
 
+const SITE_URL = 'https://langfordlanes.tweeres.com'
+const TITLE = 'Langford Lanes availability'
+const DESCRIPTION = 'Open bowling start times at Langford Lanes.'
+const OG_IMAGE = `${SITE_URL}/bowling-ball.png`
+
 export function meta({}: Route.MetaArgs) {
 	return [
-		{ title: 'Langford Lanes availability' },
-		{
-			name: 'description',
-			content: 'Open bowling start times at Langford Lanes.',
-		},
+		{ title: TITLE },
+		{ name: 'description', content: DESCRIPTION },
+		{ tagName: 'link', rel: 'canonical', href: `${SITE_URL}/` },
+		{ property: 'og:type', content: 'website' },
+		{ property: 'og:site_name', content: TITLE },
+		{ property: 'og:title', content: TITLE },
+		{ property: 'og:description', content: DESCRIPTION },
+		{ property: 'og:url', content: `${SITE_URL}/` },
+		{ property: 'og:image', content: OG_IMAGE },
+		{ property: 'og:image:width', content: '512' },
+		{ property: 'og:image:height', content: '512' },
+		{ name: 'twitter:card', content: 'summary' },
+		{ name: 'twitter:title', content: TITLE },
+		{ name: 'twitter:description', content: DESCRIPTION },
+		{ name: 'twitter:image', content: OG_IMAGE },
 	]
 }
 
