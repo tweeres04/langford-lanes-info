@@ -51,9 +51,11 @@ import {
 import { ThemeToggle } from '~/components/theme-toggle'
 
 const SITE_URL = 'https://langfordlanes.tweeres.com'
-const TITLE = 'Langford Lanes availability'
-const DESCRIPTION = 'Open bowling start times at Langford Lanes.'
-const OG_IMAGE = `${SITE_URL}/bowling-ball.png`
+const SITE_NAME = 'Langford Lanes availability'
+const TITLE = 'Langford Lanes availability — open & cosmic bowling times'
+const DESCRIPTION =
+	'See which lanes are open at Langford Lanes in Langford, BC right now — live start times, standard & VIP availability, and cosmic bowling sessions.'
+const OG_IMAGE = `${SITE_URL}/og-image.png`
 
 export function meta({}: Route.MetaArgs) {
 	return [
@@ -61,17 +63,62 @@ export function meta({}: Route.MetaArgs) {
 		{ name: 'description', content: DESCRIPTION },
 		{ tagName: 'link', rel: 'canonical', href: `${SITE_URL}/` },
 		{ property: 'og:type', content: 'website' },
-		{ property: 'og:site_name', content: TITLE },
+		{ property: 'og:site_name', content: SITE_NAME },
 		{ property: 'og:title', content: TITLE },
 		{ property: 'og:description', content: DESCRIPTION },
 		{ property: 'og:url', content: `${SITE_URL}/` },
 		{ property: 'og:image', content: OG_IMAGE },
-		{ property: 'og:image:width', content: '512' },
-		{ property: 'og:image:height', content: '512' },
-		{ name: 'twitter:card', content: 'summary' },
+		{ property: 'og:image:width', content: '1024' },
+		{ property: 'og:image:height', content: '579' },
+		{ name: 'twitter:card', content: 'summary_large_image' },
 		{ name: 'twitter:title', content: TITLE },
 		{ name: 'twitter:description', content: DESCRIPTION },
 		{ name: 'twitter:image', content: OG_IMAGE },
+		{
+			'script:ld+json': {
+				'@context': 'https://schema.org',
+				'@type': 'BowlingAlley',
+				name: 'Langford Lanes',
+				description: DESCRIPTION,
+				url: 'https://citycentrepark.ca/langford-lanes/',
+				telephone: '+1-250-391-1738',
+				image: OG_IMAGE,
+				address: {
+					'@type': 'PostalAddress',
+					streetAddress: '1097 Langford Pkwy',
+					addressLocality: 'Victoria',
+					addressRegion: 'BC',
+					postalCode: 'V9B 0A5',
+					addressCountry: 'CA',
+				},
+				openingHoursSpecification: [
+					{
+						'@type': 'OpeningHoursSpecification',
+						dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday'],
+						opens: '10:00',
+						closes: '23:00',
+					},
+					{
+						'@type': 'OpeningHoursSpecification',
+						dayOfWeek: 'Friday',
+						opens: '10:00',
+						closes: '00:00',
+					},
+					{
+						'@type': 'OpeningHoursSpecification',
+						dayOfWeek: 'Saturday',
+						opens: '09:00',
+						closes: '00:00',
+					},
+					{
+						'@type': 'OpeningHoursSpecification',
+						dayOfWeek: 'Sunday',
+						opens: '09:00',
+						closes: '23:00',
+					},
+				],
+			},
+		},
 	]
 }
 
