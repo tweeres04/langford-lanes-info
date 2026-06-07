@@ -2,6 +2,7 @@ import { Suspense, useEffect, useRef, useState } from 'react'
 import {
 	Await,
 	Form,
+	redirect,
 	useSearchParams,
 	useRevalidator,
 	useSubmit,
@@ -272,10 +273,18 @@ function slotFits(
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-	const date = parseDateParam(new URL(request.url).searchParams.get('date'))
+	const url = new URL(request.url)
+	const date = parseDateParam(url.searchParams.get('date'))
 	const dateValue = toDateInputValue(date)
 	const now = new Date()
 	const todayValue = toDateInputValue(now)
+	// Landing back on today doesn't need ?date — keep the URL clean.
+	// (Redirect to a literal "/" — url.pathname is the .data endpoint on
+	// client-side navigations, not the page path.)
+	if (url.searchParams.has('date') && dateValue === todayValue) {
+		url.searchParams.delete('date')
+		throw redirect(`/${url.search}`)
+	}
 	const common = {
 		dateLabel: date.toLocaleDateString('en-CA', {
 			weekday: 'long',
