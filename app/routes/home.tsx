@@ -212,7 +212,9 @@ function isCosmic(slot: Slot, dayOfWeek: number): boolean {
 }
 
 const MAX_LENGTH_MIN = 180 // Meriq caps a booking at 3 hours
+const MIN_LENGTH_MIN = 30 // …and won't book shorter than 30 minutes
 const LANE_OPTIONS = [1, 2, 3] // Meriq lets you book up to 3 lanes
+const MIN_LANES = 1
 const LENGTH_OPTIONS = [
 	{ value: '30', label: '30 min' },
 	{ value: '45', label: '45 min' },
@@ -232,11 +234,11 @@ function parseLaneType(value: string | null): LaneType {
 }
 function parseLanes(value: string | null): number {
 	const n = Number(value)
-	return LANE_OPTIONS.includes(n) ? n : 0
+	return LANE_OPTIONS.includes(n) ? n : MIN_LANES
 }
 function parseLength(value: string | null): number {
 	const n = Number(value)
-	return LENGTH_OPTIONS.some((o) => Number(o.value) === n) ? n : 0
+	return LENGTH_OPTIONS.some((o) => Number(o.value) === n) ? n : MIN_LENGTH_MIN
 }
 function parseCosmic(value: string | null): CosmicFilter {
 	return value === 'cosmic' || value === 'regular' ? value : 'any'
@@ -262,8 +264,8 @@ function slotFits(
 	cosmic: CosmicFilter,
 	dayOfWeek: number,
 ): boolean {
-	if (lanes > 0 && lanesForType(slot, type) < lanes) return false
-	if (minLength > 0 && maxBookableMinutes(slot, close) < minLength) return false
+	if (lanesForType(slot, type) < lanes) return false
+	if (maxBookableMinutes(slot, close) < minLength) return false
 	if (cosmic === 'cosmic' && !isCosmic(slot, dayOfWeek)) return false
 	if (cosmic === 'regular' && isCosmic(slot, dayOfWeek)) return false
 	return true
@@ -372,7 +374,10 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 	const minLength = parseLength(searchParams.get('length'))
 	const cosmic = parseCosmic(searchParams.get('cosmic'))
 	const filtersActive =
-		laneType !== 'any' || lanes > 0 || minLength > 0 || cosmic !== 'any'
+		laneType !== 'any' ||
+		lanes > MIN_LANES ||
+		minLength > MIN_LENGTH_MIN ||
+		cosmic !== 'any'
 
 	function setFilter(key: string, value: string | null, emptyValue: string) {
 		setSearchParams(
@@ -552,16 +557,13 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 											<Select
 												value={String(lanes)}
 												onValueChange={(value) =>
-													setFilter('lanes', value, '0')
+													setFilter('lanes', value, String(MIN_LANES))
 												}
 											>
 												<SelectTrigger className="w-full">
-													<SelectValue>
-														{(value) => (value === '0' ? 'Any' : value)}
-													</SelectValue>
+													<SelectValue>{(value) => value}</SelectValue>
 												</SelectTrigger>
 												<SelectContent>
-													<SelectItem value="0">Any</SelectItem>
 													{LANE_OPTIONS.map((n) => (
 														<SelectItem key={n} value={String(n)}>
 															{n}
@@ -575,21 +577,18 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 											<Select
 												value={String(minLength)}
 												onValueChange={(value) =>
-													setFilter('length', value, '0')
+													setFilter('length', value, String(MIN_LENGTH_MIN))
 												}
 											>
 												<SelectTrigger className="w-full">
 													<SelectValue>
 														{(value) =>
-															value === '0'
-																? 'Any'
-																: (LENGTH_OPTIONS.find((o) => o.value === value)
-																		?.label ?? value)
+															LENGTH_OPTIONS.find((o) => o.value === value)
+																?.label ?? value
 														}
 													</SelectValue>
 												</SelectTrigger>
 												<SelectContent>
-													<SelectItem value="0">Any</SelectItem>
 													{LENGTH_OPTIONS.map((o) => (
 														<SelectItem key={o.value} value={o.value}>
 															{o.label}
@@ -779,8 +778,10 @@ function FilterParams({
 			{laneType !== 'any' && (
 				<input type="hidden" name="type" value={laneType} />
 			)}
-			{lanes > 0 && <input type="hidden" name="lanes" value={lanes} />}
-			{minLength > 0 && <input type="hidden" name="length" value={minLength} />}
+			{lanes > MIN_LANES && <input type="hidden" name="lanes" value={lanes} />}
+			{minLength > MIN_LENGTH_MIN && (
+				<input type="hidden" name="length" value={minLength} />
+			)}
 			{cosmic !== 'any' && <input type="hidden" name="cosmic" value={cosmic} />}
 		</>
 	)
