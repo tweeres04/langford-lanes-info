@@ -5,6 +5,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Page-width constraint shared by main, the filters sheet, and the Book FAB
+   strip. Overrides Tailwind's built-in container (breakpoint-based widths). */
+@utility container {
+  margin-inline: auto;
+  width: 100%;
+  max-width: var(--container-2xl);
+}
+
 @theme {
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";

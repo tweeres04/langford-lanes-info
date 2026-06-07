@@ -388,7 +388,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 	return (
 		<>
 			<DiscoLights />
-			<main className="mx-auto max-w-2xl p-4 pb-28 text-lg">
+			<main className="container p-4 pb-28 text-lg">
 				<div className="mb-6 flex items-center justify-between">
 					<div className="flex items-center gap-2">
 						<img src="/bowling-ball.png" alt="" className="size-9" />
@@ -487,114 +487,122 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 								}
 							/>
 							<SheetContent side="bottom">
-								<SheetHeader>
-									<SheetTitle>Filters</SheetTitle>
-									<SheetDescription>
-										Times that don't fit get faded out.
-									</SheetDescription>
-								</SheetHeader>
-								<div className="grid gap-4 px-4">
-									<div className="grid gap-2">
-										<Label>Cosmic bowling</Label>
-										<Select
-											value={cosmic}
-											onValueChange={(value) =>
-												setFilter('cosmic', value, 'any')
-											}
-										>
-											<SelectTrigger className="w-full">
-												<SelectValue>
-													{(value) =>
-														value === 'cosmic'
-															? 'Cosmic'
-															: value === 'regular'
-																? 'Not cosmic'
-																: 'Either'
-													}
-												</SelectValue>
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="any">Either</SelectItem>
-												<SelectItem value="cosmic">Cosmic</SelectItem>
-												<SelectItem value="regular">Not cosmic</SelectItem>
-											</SelectContent>
-										</Select>
+								<div className="container space-y-4">
+									<SheetHeader>
+										<SheetTitle>Filters</SheetTitle>
+										<SheetDescription>
+											Times that don't fit get faded out.
+										</SheetDescription>
+									</SheetHeader>
+									<div className="grid gap-4 px-4">
+										<div className="grid gap-2">
+											<Label>Cosmic bowling</Label>
+											<Select
+												value={cosmic}
+												onValueChange={(value) =>
+													setFilter('cosmic', value, 'any')
+												}
+											>
+												<SelectTrigger className="w-full">
+													<SelectValue>
+														{(value) =>
+															value === 'cosmic'
+																? 'Cosmic'
+																: value === 'regular'
+																	? 'Not cosmic'
+																	: 'Either'
+														}
+													</SelectValue>
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="any">Either</SelectItem>
+													<SelectItem value="cosmic">Cosmic</SelectItem>
+													<SelectItem value="regular">Not cosmic</SelectItem>
+												</SelectContent>
+											</Select>
+										</div>
+										<div className="grid gap-2">
+											<Label>Lane type</Label>
+											<Select
+												value={laneType}
+												onValueChange={(value) =>
+													setFilter('type', value, 'any')
+												}
+											>
+												<SelectTrigger className="w-full">
+													<SelectValue>
+														{(value) =>
+															value === 'standard'
+																? 'Standard'
+																: value === 'vip'
+																	? 'VIP'
+																	: 'Any'
+														}
+													</SelectValue>
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="any">Any</SelectItem>
+													<SelectItem value="standard">Standard</SelectItem>
+													<SelectItem value="vip">VIP</SelectItem>
+												</SelectContent>
+											</Select>
+										</div>
+										<div className="grid gap-2">
+											<Label>Lanes needed</Label>
+											<Select
+												value={String(lanes)}
+												onValueChange={(value) =>
+													setFilter('lanes', value, '0')
+												}
+											>
+												<SelectTrigger className="w-full">
+													<SelectValue>
+														{(value) => (value === '0' ? 'Any' : value)}
+													</SelectValue>
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="0">Any</SelectItem>
+													{LANE_OPTIONS.map((n) => (
+														<SelectItem key={n} value={String(n)}>
+															{n}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</div>
+										<div className="grid gap-2">
+											<Label>Minimum length</Label>
+											<Select
+												value={String(minLength)}
+												onValueChange={(value) =>
+													setFilter('length', value, '0')
+												}
+											>
+												<SelectTrigger className="w-full">
+													<SelectValue>
+														{(value) =>
+															value === '0'
+																? 'Any'
+																: (LENGTH_OPTIONS.find((o) => o.value === value)
+																		?.label ?? value)
+														}
+													</SelectValue>
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="0">Any</SelectItem>
+													{LENGTH_OPTIONS.map((o) => (
+														<SelectItem key={o.value} value={o.value}>
+															{o.label}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</div>
 									</div>
-									<div className="grid gap-2">
-										<Label>Lane type</Label>
-										<Select
-											value={laneType}
-											onValueChange={(value) => setFilter('type', value, 'any')}
-										>
-											<SelectTrigger className="w-full">
-												<SelectValue>
-													{(value) =>
-														value === 'standard'
-															? 'Standard'
-															: value === 'vip'
-																? 'VIP'
-																: 'Any'
-													}
-												</SelectValue>
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="any">Any</SelectItem>
-												<SelectItem value="standard">Standard</SelectItem>
-												<SelectItem value="vip">VIP</SelectItem>
-											</SelectContent>
-										</Select>
-									</div>
-									<div className="grid gap-2">
-										<Label>Lanes needed</Label>
-										<Select
-											value={String(lanes)}
-											onValueChange={(value) => setFilter('lanes', value, '0')}
-										>
-											<SelectTrigger className="w-full">
-												<SelectValue>
-													{(value) => (value === '0' ? 'Any' : value)}
-												</SelectValue>
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="0">Any</SelectItem>
-												{LANE_OPTIONS.map((n) => (
-													<SelectItem key={n} value={String(n)}>
-														{n}
-													</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
-									</div>
-									<div className="grid gap-2">
-										<Label>Minimum length</Label>
-										<Select
-											value={String(minLength)}
-											onValueChange={(value) => setFilter('length', value, '0')}
-										>
-											<SelectTrigger className="w-full">
-												<SelectValue>
-													{(value) =>
-														value === '0'
-															? 'Any'
-															: (LENGTH_OPTIONS.find((o) => o.value === value)
-																	?.label ?? value)
-													}
-												</SelectValue>
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="0">Any</SelectItem>
-												{LENGTH_OPTIONS.map((o) => (
-													<SelectItem key={o.value} value={o.value}>
-														{o.label}
-													</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
-									</div>
+									<SheetFooter>
+										<SheetClose render={<Button>Done</Button>} />
+									</SheetFooter>
 								</div>
-								<SheetFooter>
-									<SheetClose render={<Button>Done</Button>} />
-								</SheetFooter>
 							</SheetContent>
 						</Sheet>
 					</div>
@@ -677,14 +685,18 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 					</Table>
 				)}
 
-				<Button
-					render={<a href="https://secure.meriq.com/langford-lanes/" />}
-					size="xl"
-					className="fixed right-6 bottom-6 bg-clip-border bg-[linear-gradient(to_bottom_left,rgba(255,255,255,0.3),transparent_25%)] shadow-[0_0_18px_0_rgba(225,44,90,0.85),0_0_48px_10px_rgba(225,44,90,0.55),inset_0_1px_0_rgba(255,255,255,0.7)]"
-				>
-					<HugeiconsIcon icon={BowlingIcon} className="size-6" />
-					Book
-				</Button>
+				<div className="pointer-events-none fixed inset-x-0 bottom-6">
+					<div className="container flex justify-end px-4">
+						<Button
+							render={<a href="https://secure.meriq.com/langford-lanes/" />}
+							size="xl"
+							className="pointer-events-auto bg-clip-border bg-[linear-gradient(to_bottom_left,rgba(255,255,255,0.3),transparent_25%)] shadow-[0_0_18px_0_rgba(225,44,90,0.85),0_0_48px_10px_rgba(225,44,90,0.55),inset_0_1px_0_rgba(255,255,255,0.7)]"
+						>
+							<HugeiconsIcon icon={BowlingIcon} className="size-6" />
+							Book
+						</Button>
+					</div>
+				</div>
 				<section className="mt-12">
 					<h2 className="mb-4 text-xl font-semibold">FAQ</h2>
 					<dl className="space-y-4">
