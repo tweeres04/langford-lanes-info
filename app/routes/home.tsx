@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import {
 	Await,
 	Form,
@@ -13,7 +13,6 @@ import {
 	ArrowLeft01Icon,
 	ArrowRight01Icon,
 	BowlingIcon,
-	FilterIcon,
 	Saturn01Icon,
 	Share03Icon,
 } from '@hugeicons/core-free-icons'
@@ -39,7 +38,6 @@ import {
 	SheetFooter,
 	SheetHeader,
 	SheetTitle,
-	SheetTrigger,
 } from '~/components/ui/sheet'
 import { Skeleton } from '~/components/ui/skeleton'
 import {
@@ -382,11 +380,28 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 	const lanes = parseLanes(searchParams.get('lanes'))
 	const minLength = parseLength(searchParams.get('length'))
 	const cosmic = parseCosmic(searchParams.get('cosmic'))
+
+	// Controlled so the active-filter chips can open the sheet too.
+	const [filtersOpen, setFiltersOpen] = useState(false)
+
 	const filtersActive =
+		cosmic !== 'any' ||
 		laneType !== 'any' ||
 		lanes > MIN_LANES ||
-		minLength > MIN_LENGTH_MIN ||
-		cosmic !== 'any'
+		minLength > MIN_LENGTH_MIN
+
+	function resetFilters() {
+		setSearchParams(
+			(prev) => {
+				prev.delete('cosmic')
+				prev.delete('type')
+				prev.delete('lanes')
+				prev.delete('length')
+				return prev
+			},
+			{ replace: true, preventScrollReset: true },
+		)
+	}
 
 	function setFilter(key: string, value: string | null, emptyValue: string) {
 		setSearchParams(
@@ -488,18 +503,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 					<h2 className="text-xl font-semibold">{dateLabel}</h2>
 					<div className="flex items-center gap-2">
 						<ShareButton />
-						<Sheet>
-							<SheetTrigger
-								render={
-									<Button variant="outline">
-										<HugeiconsIcon icon={FilterIcon} />
-										Filters
-										{filtersActive && (
-											<span className="size-2 rounded-full bg-primary" />
-										)}
-									</Button>
-								}
-							/>
+						<Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
 							<SheetContent side="bottom">
 								<div className="container space-y-4">
 									<SheetHeader>
@@ -614,6 +618,32 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 							</SheetContent>
 						</Sheet>
 					</div>
+				</div>
+
+				<div className="mb-4 flex flex-wrap gap-2">
+					<FilterButton onClick={() => setFiltersOpen(true)}>
+						{cosmic === 'cosmic'
+							? 'Cosmic'
+							: cosmic === 'regular'
+								? 'Not cosmic'
+								: 'Cosmic or not'}
+					</FilterButton>
+					<FilterButton onClick={() => setFiltersOpen(true)}>
+						{laneType === 'standard'
+							? 'Standard lanes'
+							: laneType === 'vip'
+								? 'VIP lanes'
+								: 'Any lane type'}
+					</FilterButton>
+					<FilterButton onClick={() => setFiltersOpen(true)}>
+						{lanes === 1 ? '1 lane+' : `${lanes} lanes`}
+					</FilterButton>
+					<FilterButton onClick={() => setFiltersOpen(true)}>
+						{LENGTH_OPTIONS.find((o) => Number(o.value) === minLength)?.label}+
+					</FilterButton>
+					<FilterButton disabled={!filtersActive} onClick={resetFilters}>
+						Reset
+					</FilterButton>
 				</div>
 
 				{loaderData.isPast ? (
@@ -771,6 +801,31 @@ function ShareButton() {
 
 // Hidden inputs that carry the active filters through the date GET forms, so
 // flipping days keeps your filters instead of resetting them.
+// Filter summary button; tapping it opens the filter sheet to adjust.
+function FilterButton({
+	variant = 'outline',
+	disabled,
+	onClick,
+	children,
+}: {
+	variant?: 'outline' | 'ghost'
+	disabled?: boolean
+	onClick: () => void
+	children: ReactNode
+}) {
+	return (
+		<Button
+			type="button"
+			size="sm"
+			variant={variant}
+			disabled={disabled}
+			onClick={onClick}
+		>
+			{children}
+		</Button>
+	)
+}
+
 function FilterParams({
 	laneType,
 	lanes,
