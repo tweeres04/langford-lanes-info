@@ -243,19 +243,33 @@ function parseCosmic(value: string | null): CosmicFilter {
 	return value === 'cosmic' || value === 'regular' ? value : 'any'
 }
 
-function lanesForType(slot: Slot, type: LaneType): number {
-	if (type === 'standard') return slot.standard
-	if (type === 'vip') return slot.vip
-	return slot.standard + slot.vip
-}
+const SLOT_MIN = 15 // Meriq start times are every 15 minutes
 
 // The longest booking a start time can fit before closing (capped at 3h).
 function maxBookableMinutes(slot: Slot, close: number): number {
 	return Math.min(MAX_LENGTH_MIN, close - slot.value)
 }
 
+// A booking holds the same lane type for its whole length, so every 15-minute
+// slot it covers needs enough free lanes of that one type.
+function runFits(
+	slots: Slot[],
+	startIndex: number,
+	type: 'standard' | 'vip',
+	lanes: number,
+	length: number,
+): boolean {
+	const start = slots[startIndex].value
+	for (let i = 0; i < length / SLOT_MIN; i++) {
+		const slot = slots[startIndex + i]
+		if (slot?.value !== start + i * SLOT_MIN || slot[type] < lanes) return false
+	}
+	return true
+}
+
 function slotFits(
-	slot: Slot,
+	slots: Slot[],
+	index: number,
 	type: LaneType,
 	lanes: number,
 	minLength: number,
@@ -263,7 +277,10 @@ function slotFits(
 	cosmic: CosmicFilter,
 	dayOfWeek: number,
 ): boolean {
-	if (lanesForType(slot, type) < lanes) return false
+	const slot = slots[index]
+	const types = type === 'any' ? (['standard', 'vip'] as const) : [type]
+	if (!types.some((t) => runFits(slots, index, t, lanes, minLength)))
+		return false
 	if (maxBookableMinutes(slot, close) < minLength) return false
 	if (cosmic === 'cosmic' && !isCosmic(slot, dayOfWeek)) return false
 	if (cosmic === 'regular' && isCosmic(slot, dayOfWeek)) return false
@@ -679,12 +696,13 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 												</TableCell>
 											</TableRow>
 										) : (
-											resolved.map((slot) => (
+											resolved.map((slot, index) => (
 												<TableRow
 													key={slot.value}
 													className={
 														slotFits(
-															slot,
+															resolved,
+															index,
 															laneType,
 															lanes,
 															minLength,
